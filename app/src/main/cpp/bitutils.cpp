@@ -13,11 +13,11 @@ const _ui bitPositions[] = {
         25, 14, 19,  9, 13,  8,  7,  6
 };
 
-_ui getBit(_ci &number, _ci position) {
+_ui getBit(_ci number, _ci position) {
     return (number >> position) & 1;
 }
 
-_ui setBit(_ci &number, _ci position) {
+_ui setBit(_ci number, _ci position) {
     return number | (1 << position);
 }
 

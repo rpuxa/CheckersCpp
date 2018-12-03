@@ -1,9 +1,10 @@
 #include "bitutils.h"
+#include "bitutils.cpp"
 #include "types.h"
 #include "board.h"
 
-_move createMove(_ci &from, _ci &to, _cb &isTake, _cb &isWhite, _cb isQueen) {
-    return static_cast<_move>(isTake | (from << 1) | (to << 6) | (isWhite << 11) || (isQueen << 12));
+_move createMove(_ci from, _ci to, _cb isTake, _cb isWhite, _cb isQueen) {
+    return static_cast<_move>(isTake | (from << 1) | (to << 6) | (isWhite << 11) | (isQueen << 12));
 }
 
 inline _ui isTake(_cmove &move) {
@@ -117,7 +118,6 @@ _ui moveBitMasks[MOVES_SET_POWER];
 _ui moveBitMasksQueen[MOVES_SET_POWER];
 _ui takeMasks90[MOVES_SET_POWER];
 _ui moveBitMasks90[MOVES_SET_POWER];
-_ui moveBitMasksQueen90[MOVES_SET_POWER];
 
 const int dirs[] = {1, -1};
 
@@ -288,6 +288,8 @@ void genMovesMask() {
                         if (queen) {
                             moveBitMasks[move] = 0;
                             moveBitMasksQueen[move] = (1u << from) | (1u << to);
+
+                            moveBitMasks90[move] = (1u << ROTATED_CELLS[from]) | (1u << ROTATED_CELLS[to]);
                         } else if ((white && LAST_HORIZONTAL[to]) || (!white && FIRST_HORIZONTAL[to])) {
                             moveBitMasks[move] = 1u << from;
                             moveBitMasksQueen[move] = 1u << to;
@@ -411,4 +413,13 @@ void makeMove(
         __makeMove(bc, wc, bq, wq, b90, w90, move);
 }
 
+_board rotateBoard(_board board) {
+    _board rotated = 0;
+    for (_ui cell = 0; cell < 32; ++cell) {
+        if (getBit(board, cell))
+            rotated = setBit(rotated, ROTATED_CELLS[cell]);
+    }
+
+    return rotated;
+}
 

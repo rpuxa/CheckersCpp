@@ -14,6 +14,15 @@ class NativeMethods {
             int analyzeDepth
     );
 
+    public static native void getAvailableMoves(
+            int whiteCheckers,
+            int blackCheckers,
+            int whiteQueens,
+            int blackQueens,
+            int cell,
+            short[] movesArray
+    );
+
     static {
         System.loadLibrary("receiver");
     }

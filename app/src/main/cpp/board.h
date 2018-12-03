@@ -33,3 +33,5 @@ void makeMove(
         _cmove move,
         _cb isWhiteMove
 );
+
+_board rotateBoard(_board board);
