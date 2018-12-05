@@ -21,6 +21,10 @@ _ui setBit(_ci number, _ci position) {
     return number | (1 << position);
 }
 
+void setBitAssign(_ui &number, _ui position) {
+    number |= 1 << position;
+}
+
 _ui getLowestBit(_ci number) {
     return bitPositions[((number & -number) * 0x03F79D71B4CB0A89ULL) >> 58];
 }

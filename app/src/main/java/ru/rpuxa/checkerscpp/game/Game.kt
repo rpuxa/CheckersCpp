@@ -1,17 +1,47 @@
 package ru.rpuxa.checkerscpp.game
 
+import ru.rpuxa.checkerscpp.game.board.Move
 import ru.rpuxa.checkerscpp.game.board.Position
+import ru.rpuxa.checkerscpp.natives.NativeEngine
+import kotlin.concurrent.thread
 
 class Game(
     val position: Position,
     isTurnWhite: Boolean,
-    val whitePlayer: Player,
-    val blackPlayer: Player
+    private val whitePlayer: Player,
+    private val blackPlayer: Player,
+    private var gameVisualizer: GameVisualizer
 ) {
     var isTurnWhite: Boolean = isTurnWhite
         private set
 
-    fun start() {
+    var gameEnd = false
 
+    fun start() {
+        val whitePlayerExecutor = PlayerExecutor(whitePlayer)
+        val blackPlayerExecutor = PlayerExecutor(blackPlayer)
+        thread {
+            if (!gameEnd) {
+                if (isTurnWhite)
+                    whitePlayer.onMove(whitePlayerExecutor, this)
+                else
+                    blackPlayer.onMove(blackPlayerExecutor, this)
+            }
+        }
+    }
+
+    private inner class PlayerExecutor(val sender: Player) : CommandExecutor {
+        override fun move(move: Move) {
+            if (whitePlayer === sender != isTurnWhite)
+                throw IllegalStateException("Move out of turn")
+            NativeEngine.makeMove(position, move)
+            gameVisualizer.onMove(move, position)
+        }
+
+        override fun resign() {
+        }
+
+        override fun offerDraw() {
+        }
     }
 }

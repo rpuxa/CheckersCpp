@@ -1,7 +1,7 @@
 package ru.rpuxa.checkerscpp.natives;
 
 
-class NativeMethods {
+public class NativeMethods {
 
     public static native void prepareEngine();
 
@@ -21,6 +21,15 @@ class NativeMethods {
             int blackQueens,
             int cell,
             short[] movesArray
+    );
+
+    public static native void makeMove(
+            int whiteCheckers,
+            int blackCheckers,
+            int whiteQueens,
+            int blackQueens,
+            short move,
+            int[] changedPosition
     );
 
     static {

@@ -24,7 +24,7 @@ class NativeMove(move: Short) : Move {
         @JvmField
         val END_MOVES_FLAG: Short = 0.toShort().inv()
 
-        private val X = arrayOf(
+        val X = arrayOf(
             0,
             2, 1, 0,
             4, 3, 2, 1, 0,
@@ -35,7 +35,7 @@ class NativeMove(move: Short) : Move {
             7
         )
 
-        private val Y = arrayOf(
+        val Y = arrayOf(
             0,
             0, 1, 2,
             0, 1, 2, 3, 4,

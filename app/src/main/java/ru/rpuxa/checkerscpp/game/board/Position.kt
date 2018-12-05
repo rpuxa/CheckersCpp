@@ -1,5 +1,9 @@
 package ru.rpuxa.checkerscpp.game.board
 
+import ru.rpuxa.checkerscpp.natives.NativeMove.Companion.X
+import ru.rpuxa.checkerscpp.natives.NativeMove.Companion.Y
+import ru.rpuxa.checkerscpp.natives.checkBit
+
 class Position {
     val board: Array<Array<Figure>> =
         Array(BOARD_SIZE) {
@@ -7,6 +11,31 @@ class Position {
                 BOARD_SIZE
             ) { NullFigure }
         }
+
+    fun setFromNative(
+        whiteCheckers: Int,
+        blackCheckers: Int,
+        blackQueens: Int,
+        whiteQueens: Int
+    ) {
+        val types = arrayOf(whiteCheckers, blackCheckers, whiteQueens, blackQueens)
+        for (type in 0 until 4) {
+            for (bit in 0 until 32) {
+                board[X[bit]][Y[bit]] =
+                        if (types[type] checkBit bit) {
+                            when (type) {
+                                0 -> WhiteChecker
+                                1 -> BlackChecker
+                                2 -> WhiteQueen
+                                3 -> BlackQueen
+                                else -> throw IllegalStateException()
+                            }
+                        } else {
+                            NullFigure
+                        }
+            }
+        }
+    }
 
     companion object {
         const val BOARD_SIZE = 8

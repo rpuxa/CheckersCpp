@@ -1,13 +1,12 @@
 package ru.rpuxa.checkerscpp.natives
 
-import ru.rpuxa.checkerscpp.engine.Engine
 import ru.rpuxa.checkerscpp.game.board.*
 import ru.rpuxa.checkerscpp.game.board.Position.Companion.BOARD_RANGE
 import ru.rpuxa.checkerscpp.natives.NativeMove.Companion.END_MOVES_FLAG
 import java.util.*
 import kotlin.concurrent.thread
 
-object NativeEngine : Engine {
+object NativeEngine {
 
     private val mainThread = thread {
         NativeMethods.prepareEngine()
@@ -17,7 +16,7 @@ object NativeEngine : Engine {
                 while (queue.isEmpty())
                     Thread.sleep(50)
 
-                val task = queue.first
+                val task = queue.pollFirst()
                 task()
             }
         } catch (e: InterruptedException) {
@@ -27,35 +26,26 @@ object NativeEngine : Engine {
     private val queue = ArrayDeque<() -> Unit>()
 
     private fun task(runnable: () -> Unit) {
-        queue.addLast(runnable)
+        var wait = true
+
+        queue.addLast {
+            runnable()
+            wait = false
+        }
+        while (wait)
+            Thread.sleep(1)
     }
 
-    override fun getMoves(position: Position, x: Int, y: Int): Array<Move> {
-        var whiteCheckers = 0
-        var blackCheckers = 0
-        var blackQueens = 0
-        var whiteQueens = 0
+    fun getMoves(position: Position, x: Int, y: Int): Array<Move> {
+        val (whiteCheckers, blackCheckers, blackQueens, whiteQueens) =
+                position.toNative()
 
-        for (i in BOARD_RANGE)
-            for (j in BOARD_RANGE) {
-                val bit = BITS[i][j]
-                when (position.board[i][j]) {
-                    WhiteChecker -> whiteCheckers = whiteCheckers setBit bit
-                    BlackChecker -> blackCheckers = blackCheckers setBit bit
-                    WhiteQueen -> whiteQueens = whiteQueens setBit bit
-                    BlackQueen -> blackQueens = blackQueens setBit bit
-                }
-            }
 
         val moves = ShortArray(200)
-        val lock = Object()
 
         task {
             NativeMethods.getAvailableMoves(whiteCheckers, blackCheckers, whiteQueens, blackQueens, BITS[x][y], moves)
-            lock.notify()
         }
-
-        lock.wait()
 
         val movesList = ArrayList<Move>()
 
@@ -66,6 +56,40 @@ object NativeEngine : Engine {
         }
 
         return movesList.toTypedArray()
+    }
+
+    fun makeMove(position: Position, move: Move) {
+        val (whiteCheckers, blackCheckers, whiteQueens, blackQueens) =
+                position.toNative()
+        val nativeMove = (BITS[move.from.x][move.from.y] shl 1) or
+                (BITS[move.to.x][move.to.y] shl 6)
+        val pos = IntArray(4)
+        task {
+            NativeMethods.makeMove(whiteCheckers, blackCheckers, whiteQueens, blackQueens, nativeMove.toShort(), pos)
+        }
+
+        val (wc, bc, wq, bq) = pos
+        position.setFromNative(wc, bc, wq, bq)
+    }
+
+    private fun Position.toNative(): IntArray {
+        var whiteCheckers = 0
+        var blackCheckers = 0
+        var blackQueens = 0
+        var whiteQueens = 0
+
+        for (i in BOARD_RANGE)
+            for (j in BOARD_RANGE) {
+                val bit = BITS[i][j]
+                when (board[i][j]) {
+                    WhiteChecker -> whiteCheckers = whiteCheckers setBit bit
+                    BlackChecker -> blackCheckers = blackCheckers setBit bit
+                    WhiteQueen -> whiteQueens = whiteQueens setBit bit
+                    BlackQueen -> blackQueens = blackQueens setBit bit
+                }
+            }
+
+        return intArrayOf(whiteCheckers, blackCheckers, whiteQueens, blackQueens)
     }
 
     private val BITS = arrayOf(

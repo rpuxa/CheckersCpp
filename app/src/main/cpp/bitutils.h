@@ -15,6 +15,8 @@ _ui getBit(_ci number, _ci position);
 
 _ui setBit(_ci number, _ci position);
 
+void setBitAssign(_ui &number, _ci position);
+
 _ui getLowestBit(_ci number);
 
 _ui powerLowestBit(_ci number);

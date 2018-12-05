@@ -1,3 +1,5 @@
+@file:Suppress("INTEGER_OVERFLOW")
+
 package ru.rpuxa.checkerscpp.views
 
 import android.content.Context
@@ -5,55 +7,37 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.util.AttributeSet
-import android.view.SurfaceHolder
-import android.view.SurfaceView
+import android.view.MotionEvent
+import android.view.View
+import org.jetbrains.anko.runOnUiThread
+import ru.rpuxa.checkerscpp.game.GameVisualizer
+import ru.rpuxa.checkerscpp.game.Human
+import ru.rpuxa.checkerscpp.game.HumanController
 import ru.rpuxa.checkerscpp.game.board.Move
 import ru.rpuxa.checkerscpp.game.board.Position
 import ru.rpuxa.checkerscpp.game.board.Position.Companion.BOARD_RANGE
 import ru.rpuxa.checkerscpp.game.board.WhiteQueen
 import ru.rpuxa.checkerscpp.natives.NativeEngine
-import kotlin.concurrent.thread
 import kotlin.math.min
 
-private const val BLACK_CELLS_COLOR = Color.RED
-private const val WHITE_CELLS_COLOR = Color.BLUE
+private const val BLACK_CELLS_COLOR = 0xb48861 or (0xff00_00_0 * 16)
+private const val WHITE_CELLS_COLOR = 0xefd9b4 or (0xff00_00_0 * 16)
 
 
 class BoardView(context: Context, attrs: AttributeSet) :
-    SurfaceView(context, attrs),
-    SurfaceHolder.Callback {
+    View(context, attrs),
+    GameVisualizer,
+    HumanController {
 
-    private val lock = Object()
-    private lateinit var drawingThread: Thread
-    var position: Position? = null
+    private var position: Position? = null
     private var moves: Array<Move>? = null
+    override lateinit var human: Human
+
 
     init {
-        holder.addCallback(this)
         position = Position().apply {
-            board[3][3] = WhiteQueen
+            board[1][1] = WhiteQueen
         }
-        moves = NativeEngine.getMoves(position!!, 3, 3)
-    }
-
-
-    override fun surfaceCreated(holder: SurfaceHolder?) {
-        drawingThread = thread {
-            try {
-                while (!drawingThread.isInterrupted) {
-                    synchronized(lock) {
-                        val canvas = holder!!.lockCanvas(null)
-                        synchronized(holder) {
-                            drawCanvas(canvas)
-                        }
-                        holder.unlockCanvasAndPost(canvas)
-                        lock.wait()
-                    }
-                }
-            } catch (e: InterruptedException) {
-            }
-        }
-
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
@@ -63,7 +47,7 @@ class BoardView(context: Context, attrs: AttributeSet) :
 
     private val paint = Paint()
 
-    private fun drawCanvas(canvas: Canvas) {
+    override fun onDraw(canvas: Canvas) {
         val cellSize = width / 8f
 
         for (x in BOARD_RANGE)
@@ -83,21 +67,39 @@ class BoardView(context: Context, attrs: AttributeSet) :
         if (moves != null)
             for (move in moves) {
                 val canvasX1 = move.to.x * cellSize + cellSize / 2
-                val canvasY1 = move.to.y * cellSize + cellSize / 2
+                val canvasY1 = (7 - move.to.y) * cellSize + cellSize / 2
 
                 canvas.drawCircle(canvasX1, canvasY1, cellSize / 4, paint)
             }
 
     }
 
-    fun update() {
-        lock.notify()
+
+    override fun onTouchEvent(event: MotionEvent): Boolean {
+        val cellSize = width / 8f
+
+        if (event.action == MotionEvent.ACTION_DOWN) {
+            val x = (event.x / cellSize).toInt()
+            val y = 7 - (event.y / cellSize).toInt()
+
+            if ((x + y) % 2 == 0) {
+                moves = NativeEngine.getMoves(position!!, x, y)
+                invalidate()
+            }
+        }
+
+        return true
     }
 
-    override fun surfaceChanged(holder: SurfaceHolder?, format: Int, width: Int, height: Int) {
+    override fun onGameStarted() {
     }
 
-    override fun surfaceDestroyed(holder: SurfaceHolder?) {
-        drawingThread.interrupt()
+    override fun onMove(move: Move, currentPosition: Position) {
+        moves = null
+        position = currentPosition
+        context.runOnUiThread {
+            invalidate()
+        }
     }
+
 }
