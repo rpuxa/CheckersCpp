@@ -20,8 +20,9 @@ class Game(
     fun start() {
         val whitePlayerExecutor = PlayerExecutor(whitePlayer)
         val blackPlayerExecutor = PlayerExecutor(blackPlayer)
+        gameVisualizer.position = position
         thread {
-            if (!gameEnd) {
+            while (!gameEnd) {
                 if (isTurnWhite)
                     whitePlayer.onMove(whitePlayerExecutor, this)
                 else
@@ -36,6 +37,7 @@ class Game(
                 throw IllegalStateException("Move out of turn")
             NativeEngine.makeMove(position, move)
             gameVisualizer.onMove(move, position)
+            isTurnWhite = !isTurnWhite
         }
 
         override fun resign() {

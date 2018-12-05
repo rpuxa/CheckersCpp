@@ -41,14 +41,17 @@ object NativeEngine {
     }
 
     fun getMoves(position: Position, x: Int, y: Int): Array<Move> {
-        val (whiteCheckers, blackCheckers, blackQueens, whiteQueens) =
+        val (whiteCheckers, blackCheckers, whiteQueens, blackQueens) =
                 position.toNative()
 
 
         val moves = ShortArray(200)
 
         task {
-            NativeMethods.getAvailableMoves(whiteCheckers, blackCheckers, whiteQueens, blackQueens, BITS[x][y], moves)
+            NativeMethods.getAvailableMoves(
+                whiteCheckers, blackCheckers, whiteQueens,
+                blackQueens, position.board[x][y].isWhite, moves
+            )
         }
 
         val movesList = ArrayList<Move>()
@@ -56,7 +59,9 @@ object NativeEngine {
         for (move in moves) {
             if (move == END_MOVES_FLAG)
                 break
-            movesList.add(NativeMove(move))
+            val nativeMove = NativeMove(move)
+            if (nativeMove.from.x == x && nativeMove.from.y == y)
+                movesList.add(nativeMove)
         }
 
         return movesList.toTypedArray()
@@ -67,10 +72,10 @@ object NativeEngine {
                 position.toNative()
         var bestMove: Short = 0
         task {
-           bestMove = NativeMethods.getBestMove(
-               whiteCheckers, blackCheckers, whiteQueens,
-               blackQueens, isTurnWhite, depth
-           )
+            bestMove = NativeMethods.getBestMove(
+                whiteCheckers, blackCheckers, whiteQueens,
+                blackQueens, isTurnWhite, depth
+            )
         }
 
         return NativeMove(bestMove)
@@ -79,15 +84,17 @@ object NativeEngine {
     fun makeMove(position: Position, move: Move) {
         val (whiteCheckers, blackCheckers, whiteQueens, blackQueens) =
                 position.toNative()
-        val nativeMove = (BITS[move.from.x][move.from.y] shl 1) or
-                (BITS[move.to.x][move.to.y] shl 6)
+        val nativeMove =
+            (BITS[move.from.x][move.from.y] shl 1) or
+                    (BITS[move.to.x][move.to.y] shl 6) or
+                    ((if (position.board[move.from.x][move.from.y].isWhite) 1 else 0) shl 11) or
+                    ((if (position.board[move.from.x][move.from.y].isQueen) 1 else 0) shl 12)
         val pos = IntArray(4)
         task {
             NativeMethods.makeMove(whiteCheckers, blackCheckers, whiteQueens, blackQueens, nativeMove.toShort(), pos)
         }
 
-        val (wc, bc, wq, bq) = pos
-        position.setFromNative(wc, bc, wq, bq)
+        position.setFromNative(pos)
     }
 
     private fun Position.toNative(): IntArray {

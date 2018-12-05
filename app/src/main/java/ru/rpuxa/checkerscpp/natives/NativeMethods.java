@@ -19,7 +19,7 @@ public class NativeMethods {
             int blackCheckers,
             int whiteQueens,
             int blackQueens,
-            int cell,
+            boolean isTurnWhite,
             short[] movesArray
     );
 

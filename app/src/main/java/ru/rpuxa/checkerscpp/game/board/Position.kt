@@ -12,17 +12,12 @@ class Position {
             ) { NullFigure }
         }
 
-    fun setFromNative(
-        whiteCheckers: Int,
-        blackCheckers: Int,
-        blackQueens: Int,
-        whiteQueens: Int
-    ) {
-        val types = arrayOf(whiteCheckers, blackCheckers, whiteQueens, blackQueens)
-        for (type in 0 until 4) {
-            for (bit in 0 until 32) {
+    fun setFromNative(figures: IntArray) {
+        for (bit in 0 until 32) {
+            for (type in 0 until 4) {
+                val b = figures[type] checkBit bit
                 board[X[bit]][Y[bit]] =
-                        if (types[type] checkBit bit) {
+                        if (b) {
                             when (type) {
                                 0 -> WhiteChecker
                                 1 -> BlackChecker
@@ -33,6 +28,8 @@ class Position {
                         } else {
                             NullFigure
                         }
+                if (b)
+                    break
             }
         }
     }
@@ -46,11 +43,12 @@ class Position {
             val position = Position()
             for (x in BOARD_RANGE)
                 for (y in BOARD_RANGE)
-                    position.board[x][y] = when (y) {
-                        in 0..2 -> WhiteChecker
-                        in 5..7 -> BlackChecker
-                        else -> NullFigure
-                    }
+                    if ((x + y) % 2 == 0)
+                        position.board[x][y] = when (y) {
+                            in 0..2 -> WhiteChecker
+                            in 5..7 -> BlackChecker
+                            else -> NullFigure
+                        }
 
             return position
         }

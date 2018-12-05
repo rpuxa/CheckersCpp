@@ -122,7 +122,7 @@ _ui moveBitMasks90[MOVES_SET_POWER];
 const int dirs[] = {1, -1};
 
 _moves
-genMoves(_ci &posOnBoard, _ci &pos, _ci &length, _board &enemy, _board &all, const bool &isQueen, const bool &white,
+genMoves(_ci &posOnBoard, _ci &pos, _ci &length, _board &enemy, _board &all, _cb &isQueen, _cb &white,
          const bool &rotated) {
     _moves moves;
     bool taking = false;
@@ -263,6 +263,8 @@ void genMovesMask() {
                     for (_ui isTake = 0; isTake < 2; ++isTake) {
                         if (from == to)
                             break;
+                        _ui rotatedFrom = ROTATED_CELLS[from];
+                        _ui rotatedTo = ROTATED_CELLS[to];
                         _move move = createMove(from, to,
                                                 static_cast<const bool &>(isTake),
                                                 static_cast<_cb &>(white),
@@ -273,14 +275,13 @@ void genMovesMask() {
                                 take |= 1 << cell;
                             }
                             takeMasks[move] = ~take;
-                        } else if (SHIFT_90[from] == SHIFT_90[to]) {
+                        } else if (SHIFT_90[rotatedFrom] == SHIFT_90[rotatedTo]) {
                             _ui take = 0u;
-                            _ui rotatedFrom = ROTATED_CELLS[from];
-                            _ui rotatedTo = ROTATED_CELLS[to];
-                            for (int cell = (rotatedTo < rotatedFrom ? rotatedTo : rotatedFrom);
-                                 cell <= (rotatedTo > rotatedFrom ? rotatedTo : rotatedFrom);
-                                 ++cell) {
-                                take |= 1 << UN_ROTATED_CELLS[cell];
+
+                            for (int rotatedCell = (rotatedTo < rotatedFrom ? rotatedTo : rotatedFrom);
+                                 rotatedCell <= (rotatedTo > rotatedFrom ? rotatedTo : rotatedFrom);
+                                 ++rotatedCell) {
+                                take |= 1 << UN_ROTATED_CELLS[rotatedCell];
                             }
                             takeMasks[move] = ~take;
                         } else {
@@ -435,16 +436,20 @@ inline void __makeMove(
         _board &enemy_q,
         _board &our90,
         _board &enemy90,
-        _cmove move
+        _cmove &move
 ) {
     _board takeMask = takeMasks[move];
 
-    our_c ^= moveBitMasks[move];
+    _ui i = moveBitMasks[move];
+    _ui i1 = moveBitMasks90[move];
+    _ui i2 = takeMasks90[move];
+
+    our_c ^= i;
     enemy_c &= takeMask;
     our_q ^= moveBitMasksQueen[move];
     enemy_q &= takeMask;
-    our90 ^= moveBitMasks90[move];
-    enemy90 &= takeMasks90[move];
+    our90 ^= i1;
+    enemy90 &= i2;
 }
 
 void makeMove(

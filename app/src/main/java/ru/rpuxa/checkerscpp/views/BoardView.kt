@@ -26,15 +26,18 @@ class BoardView(context: Context, attrs: AttributeSet) :
     GameVisualizer,
     HumanController {
 
-    private var position: Position? = null
+    override var position: Position? = null
+        set(value) {
+            field = value
+            context.runOnUiThread {
+                invalidate()
+            }
+        }
     private var moves: Array<Move>? = null
     override lateinit var human: Human
+    override var isHumanColorWhite: Boolean? = null
 
     override var canMove = false
-
-    init {
-        position = Position.createStartPosition()
-    }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         val min = min(widthMeasureSpec, heightMeasureSpec)
@@ -70,7 +73,7 @@ class BoardView(context: Context, attrs: AttributeSet) :
 
         val checkerSize = 3 * cellSize / 4
 
-        paint.color = Color.TRANSPARENT
+        paint.color = Color.WHITE
 
         val position = this.position
         if (position != null)
@@ -132,12 +135,18 @@ class BoardView(context: Context, attrs: AttributeSet) :
 
             if ((x + y) % 2 == 0) {
                 val move = moves?.find { it.to.x == x && it.to.y == y }
-                if (move != null) {
-                    human.makeMove(move)
-                } else {
-                    moves = NativeEngine.getMoves(position!!, x, y)
+                when {
+                    position!!.board[x][y].isWhite == isHumanColorWhite -> {
+                        moves = NativeEngine.getMoves(position!!, x, y)
+                        invalidate()
+                    }
+                    move != null -> human.makeMove(move)
+                    else -> {
+                        moves = null
+                        invalidate()
+                    }
                 }
-                invalidate()
+
             }
         }
 
@@ -150,9 +159,6 @@ class BoardView(context: Context, attrs: AttributeSet) :
     override fun onMove(move: Move, currentPosition: Position) {
         moves = null
         position = currentPosition
-        context.runOnUiThread {
-            invalidate()
-        }
     }
 
 }

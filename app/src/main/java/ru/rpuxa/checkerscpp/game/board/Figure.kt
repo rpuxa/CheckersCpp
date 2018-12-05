@@ -1,17 +1,16 @@
 package ru.rpuxa.checkerscpp.game.board
 
-sealed class Figure(val isWhite: Boolean)
+sealed class Figure {
+    val isQueen get() = this === WhiteQueen || this === BlackQueen
+    val isWhite get() = this === WhiteChecker || this === WhiteQueen
+}
 
-open class Checker(isWhite: Boolean) : Figure(isWhite)
+object WhiteChecker : Figure()
 
-object WhiteChecker : Checker(true)
+object BlackChecker : Figure()
 
-object BlackChecker : Checker(false)
+object WhiteQueen : Figure()
 
-open class Queen(isWhite: Boolean) : Figure(isWhite)
+object BlackQueen : Figure()
 
-object WhiteQueen : Queen(true)
-
-object BlackQueen : Queen(false)
-
-object NullFigure : Figure(false)
+object NullFigure : Figure()
