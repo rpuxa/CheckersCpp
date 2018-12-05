@@ -3,20 +3,17 @@
 package ru.rpuxa.checkerscpp.views
 
 import android.content.Context
-import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.Paint
+import android.graphics.*
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
 import org.jetbrains.anko.runOnUiThread
+import ru.rpuxa.checkerscpp.R
 import ru.rpuxa.checkerscpp.game.GameVisualizer
 import ru.rpuxa.checkerscpp.game.Human
 import ru.rpuxa.checkerscpp.game.HumanController
-import ru.rpuxa.checkerscpp.game.board.Move
-import ru.rpuxa.checkerscpp.game.board.Position
+import ru.rpuxa.checkerscpp.game.board.*
 import ru.rpuxa.checkerscpp.game.board.Position.Companion.BOARD_RANGE
-import ru.rpuxa.checkerscpp.game.board.WhiteQueen
 import ru.rpuxa.checkerscpp.natives.NativeEngine
 import kotlin.math.min
 
@@ -33,11 +30,10 @@ class BoardView(context: Context, attrs: AttributeSet) :
     private var moves: Array<Move>? = null
     override lateinit var human: Human
 
+    override var canMove = false
 
     init {
-        position = Position().apply {
-            board[1][1] = WhiteQueen
-        }
+        position = Position.createStartPosition()
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
@@ -72,6 +68,58 @@ class BoardView(context: Context, attrs: AttributeSet) :
                 canvas.drawCircle(canvasX1, canvasY1, cellSize / 4, paint)
             }
 
+        val checkerSize = 3 * cellSize / 4
+
+        paint.color = Color.TRANSPARENT
+
+        val position = this.position
+        if (position != null)
+            for (x in BOARD_RANGE)
+                for (y in BOARD_RANGE) {
+                    val bitmap = getFigureBitmap(position.board[x][y], checkerSize) ?: continue
+                    val left = x * cellSize + (cellSize - checkerSize) / 2
+                    val top = (7 - y) * cellSize + (cellSize - checkerSize) / 2
+
+                    canvas.drawBitmap(bitmap, left, top, paint)
+                }
+    }
+
+    private var lastCellSize = -1
+    private val figuresBitmap = HashMap<Figure, Bitmap>()
+
+    private fun getFigureBitmap(figure: Figure, size: Float): Bitmap? {
+        val intSize = size.toInt()
+        if (lastCellSize != intSize) {
+            figuresBitmap[WhiteChecker] = Bitmap.createScaledBitmap(
+                BitmapFactory.decodeResource(resources, R.drawable.white_checker),
+                intSize,
+                intSize,
+                false
+            )
+
+            figuresBitmap[BlackChecker] = Bitmap.createScaledBitmap(
+                BitmapFactory.decodeResource(resources, R.drawable.black_checker),
+                intSize,
+                intSize,
+                false
+            )
+
+            figuresBitmap[WhiteQueen] = Bitmap.createScaledBitmap(
+                BitmapFactory.decodeResource(resources, R.drawable.white_queen),
+                intSize,
+                intSize,
+                false
+            )
+
+            figuresBitmap[BlackQueen] = Bitmap.createScaledBitmap(
+                BitmapFactory.decodeResource(resources, R.drawable.black_queen),
+                intSize,
+                intSize,
+                false
+            )
+        }
+        lastCellSize = intSize
+        return figuresBitmap[figure]
     }
 
 
@@ -83,7 +131,12 @@ class BoardView(context: Context, attrs: AttributeSet) :
             val y = 7 - (event.y / cellSize).toInt()
 
             if ((x + y) % 2 == 0) {
-                moves = NativeEngine.getMoves(position!!, x, y)
+                val move = moves?.find { it.to.x == x && it.to.y == y }
+                if (move != null) {
+                    human.makeMove(move)
+                } else {
+                    moves = NativeEngine.getMoves(position!!, x, y)
+                }
                 invalidate()
             }
         }

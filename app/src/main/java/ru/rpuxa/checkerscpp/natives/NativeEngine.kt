@@ -8,18 +8,22 @@ import kotlin.concurrent.thread
 
 object NativeEngine {
 
-    private val mainThread = thread {
-        NativeMethods.prepareEngine()
+    private lateinit var mainThread: Thread
 
-        try {
-            while (!Thread.currentThread().isInterrupted) {
-                while (queue.isEmpty())
-                    Thread.sleep(50)
+    fun prepareEngine() {
+        mainThread = thread {
+            NativeMethods.prepareEngine()
 
-                val task = queue.pollFirst()
-                task()
+            try {
+                while (!Thread.currentThread().isInterrupted) {
+                    while (queue.isEmpty())
+                        Thread.sleep(50)
+
+                    val task = queue.pollFirst()
+                    task()
+                }
+            } catch (e: InterruptedException) {
             }
-        } catch (e: InterruptedException) {
         }
     }
 
@@ -56,6 +60,20 @@ object NativeEngine {
         }
 
         return movesList.toTypedArray()
+    }
+
+    fun getBestMove(position: Position, isTurnWhite: Boolean, depth: Int): Move {
+        val (whiteCheckers, blackCheckers, whiteQueens, blackQueens) =
+                position.toNative()
+        var bestMove: Short = 0
+        task {
+           bestMove = NativeMethods.getBestMove(
+               whiteCheckers, blackCheckers, whiteQueens,
+               blackQueens, isTurnWhite, depth
+           )
+        }
+
+        return NativeMove(bestMove)
     }
 
     fun makeMove(position: Position, move: Move) {
