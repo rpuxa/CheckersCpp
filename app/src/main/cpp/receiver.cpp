@@ -2,6 +2,11 @@
 #include "board.h"
 #include "board.cpp"
 #include "bitutils.h"
+#include "engine.h"
+#include "engine.cpp"
+
+const _move END_MOVES_FLAG = ~static_cast<const _move>(0);
+
 
 extern "C"
 JNIEXPORT void JNICALL
@@ -10,10 +15,14 @@ Java_ru_rpuxa_checkerscpp_natives_NativeMethods_prepareEngine(JNIEnv *env, jclas
 }
 
 extern "C"
-JNIEXPORT jshort JNICALL
+JNIEXPORT void JNICALL
 Java_ru_rpuxa_checkerscpp_natives_NativeMethods_getBestMove(JNIEnv *env, jclass type, jint whiteCheckers,
                                                             jint blackCheckers, jint whiteQueens, jint blackQueens,
-                                                            jboolean isWhiteMove, jint analyzeDepth) {
+                                                            jboolean isWhiteMove, jshort analyzeDepth,
+                                                            jshortArray movesArray_) {
+
+    jshort *movesArray = env->GetShortArrayElements(movesArray_, 0);
+
 
     _board wc = static_cast<_board>(whiteCheckers);
     _board bc = static_cast<_board>(blackCheckers);
@@ -22,20 +31,26 @@ Java_ru_rpuxa_checkerscpp_natives_NativeMethods_getBestMove(JNIEnv *env, jclass 
     _board w = wc | wq;
     _board b = bc | bq;
 
-    _moves moves = getMoves(
+    _moves moves = getBestMove(
             wc,
             bc,
             wq,
             bq,
             rotateBoard(w),
             rotateBoard(b),
-            isWhiteMove
+            isWhiteMove,
+            analyzeDepth
     );
 
-    return moves[0];
+    for (int i = 0; i < moves.size(); ++i) {
+        movesArray[i] = moves[i];
+    }
+
+    movesArray[moves.size()] = END_MOVES_FLAG;
+
+    env->ReleaseShortArrayElements(movesArray_, movesArray, 0);
 }
 
-const _move END_MOVES_FLAG = ~static_cast<const _move>(0);
 
 extern "C"
 JNIEXPORT void JNICALL

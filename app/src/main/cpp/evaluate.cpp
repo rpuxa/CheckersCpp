@@ -44,13 +44,13 @@ short eval(
         _board wq,
         _board bq
 ) {
-    static _ui whiteCheckersCount = bitCount(wc);
-    static _ui whiteQueensCount = bitCount(wq);
-    static _ui blackCheckersCount = bitCount(bc);
-    static _ui blackQueensCount = bitCount(bq);
+    _ui whiteCheckersCount = bitCount(wc);
+    _ui whiteQueensCount = bitCount(wq);
+    _ui blackCheckersCount = bitCount(bc);
+    _ui blackQueensCount = bitCount(bq);
 
-    static _ui whiteOnBigWay = wq & BIG_WAY_MASK;
-    static _ui blackOnBigWay = bq & BIG_WAY_MASK;
+    _ui whiteOnBigWay = wq & BIG_WAY_MASK;
+    _ui blackOnBigWay = bq & BIG_WAY_MASK;
 
     //Draw
     if (
@@ -84,7 +84,7 @@ short eval(
             )
         return 0;
 
-    static auto score = static_cast<short>(
+    auto score = static_cast<short>(
             whiteCheckersCount * CHECKER_SCORE +
             whiteQueensCount * QUEEN_SCORE -
             blackCheckersCount * CHECKER_SCORE -
@@ -98,9 +98,9 @@ short eval(
 
     //сделать какой то combination
 
-    static int left = bitCount(wc & LEFT_FLANK_MASK);
-    static int right = bitCount(wc & RIGHT_FLANK_MASK);
-    static int difference = left - right;
+    int left = bitCount(wc & LEFT_FLANK_MASK);
+    int right = bitCount(wc & RIGHT_FLANK_MASK);
+    int difference = left - right;
     if (difference > 0)
         score += difference * DIFFERENCE_FLANK_PENALTY;
     else
@@ -114,7 +114,7 @@ short eval(
     else
         score += difference * DIFFERENCE_FLANK_PENALTY;
 
-    static short cellScore = 0;
+    short cellScore = 0;
     while (wc) {
         _ui cell = getLowestBit(wc);
         zeroLowestBitAssign(wc);

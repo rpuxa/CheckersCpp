@@ -32,12 +32,13 @@ class Game(
     }
 
     private inner class PlayerExecutor(val sender: Player) : CommandExecutor {
-        override fun move(move: Move) {
+        override fun move(move: Move, multiTake: Boolean) {
             if (whitePlayer === sender != isTurnWhite)
                 throw IllegalStateException("Move out of turn")
             NativeEngine.makeMove(position, move)
             gameVisualizer.onMove(move, position)
-            isTurnWhite = !isTurnWhite
+            if (!multiTake)
+                isTurnWhite = !isTurnWhite
         }
 
         override fun resign() {

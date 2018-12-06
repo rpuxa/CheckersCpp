@@ -315,7 +315,7 @@ void gen() {
     genMovesMask();
 }
 
-inline _moves __getMove(
+inline _moves __getTakes(
         _cboard our_c,
         _cboard enemy_c,
         _cboard our_q,
@@ -332,7 +332,6 @@ inline _moves __getMove(
     _ui all90 = enemy90 | our90;
     _ui queen = getBit(our_q, cell);
     _ui rotatedCell = ROTATED_CELLS[cell];
-    bool take = false;
     for (_ui rotated = 0; rotated < 2; ++rotated) {
         _moves generatedMoves = rotated ?
                                 (queen ? movesQueen90 : (isWhiteMove ? movesW90
@@ -343,19 +342,15 @@ inline _moves __getMove(
                                         (enemy >> SHIFT[cell]) & MASK[cell]][(all >> SHIFT[cell]) &
                                                                              MASK[cell]];
         if (!generatedMoves.empty() && isTake(generatedMoves[0])) {
-            if (!take)
-                moves.clear();
-            take = true;
-        } else if (take)
-            continue;
-        for (const _move move : generatedMoves) {
-            moves.push_back(move);
+            for (const _move move : generatedMoves) {
+                moves.push_back(move);
+            }
         }
     }
     return moves;
 }
 
-_moves getMove(
+_moves getTakes(
         _cboard wc,
         _cboard bc,
         _cboard wq,
@@ -363,11 +358,12 @@ _moves getMove(
         _cboard w90,
         _cboard b90,
         _cb isWhiteMove,
-        _ui cell
+        _move move
 ) {
+    _ui cell = (move >> 6) & 0b11111u;
     return isWhiteMove ?
-           __getMove(wc, bc, wq, bq, w90, b90, isWhiteMove, cell) :
-           __getMove(bc, wq, bq, wq, b90, w90, isWhiteMove, cell);
+           __getTakes(wc, bc, wq, bq, w90, b90, isWhiteMove, cell) :
+           __getTakes(bc, wq, bq, wq, b90, w90, isWhiteMove, cell);
 }
 
 inline _moves __getMoves(
@@ -440,16 +436,12 @@ inline void __makeMove(
 ) {
     _board takeMask = takeMasks[move];
 
-    _ui i = moveBitMasks[move];
-    _ui i1 = moveBitMasks90[move];
-    _ui i2 = takeMasks90[move];
-
-    our_c ^= i;
+    our_c ^= moveBitMasks[move];
     enemy_c &= takeMask;
     our_q ^= moveBitMasksQueen[move];
     enemy_q &= takeMask;
-    our90 ^= i1;
-    enemy90 &= i2;
+    our90 ^= moveBitMasks90[move];
+    enemy90 &= takeMasks90[move];
 }
 
 void makeMove(

@@ -36,8 +36,9 @@ class BoardView(context: Context, attrs: AttributeSet) :
     private var moves: Array<Move>? = null
     override lateinit var human: Human
     override var isHumanColorWhite: Boolean? = null
-
+    override var lastMove: Move? = null
     override var canMove = false
+    var multiTake = false
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         val min = min(widthMeasureSpec, heightMeasureSpec)
@@ -135,13 +136,24 @@ class BoardView(context: Context, attrs: AttributeSet) :
 
             if ((x + y) % 2 == 0) {
                 val move = moves?.find { it.to.x == x && it.to.y == y }
+                val correctFigure = position!!.board[x][y].isWhite == isHumanColorWhite
                 when {
-                    position!!.board[x][y].isWhite == isHumanColorWhite -> {
-                        moves = NativeEngine.getMoves(position!!, x, y)
+                    correctFigure && (lastMove == null || lastMove!!.to.x == x && lastMove!!.to.y == y) -> {
+                        val (moves, multiTake) = NativeEngine.getMoves(position!!, x, y)
+                        this.moves = moves
+                        this.multiTake = multiTake
                         invalidate()
                     }
-                    move != null -> human.makeMove(move)
-                    else -> {
+                    move != null -> {
+                        human.makeMove(move, multiTake)
+                        lastMove = move
+                        if (multiTake) {
+                            val (moves, multiTake) = NativeEngine.getMoves(position!!, x, y)
+                            this.moves = moves
+                            this.multiTake = multiTake
+                        }
+                    }
+                    lastMove == null -> {
                         moves = null
                         invalidate()
                     }

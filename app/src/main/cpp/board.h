@@ -34,7 +34,7 @@ void makeMove(
         _cb isWhiteMove
 );
 
-_moves getMove(
+_moves getTakes(
         _cboard wc,
         _cboard bc,
         _cboard wq,
@@ -42,7 +42,7 @@ _moves getMove(
         _cboard w90,
         _cboard b90,
         _cb isWhiteMove,
-        _ui cell
+        _move move
 );
 
 _board rotateBoard(_board board);

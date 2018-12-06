@@ -6,7 +6,10 @@ import ru.rpuxa.checkerscpp.natives.NativeMove.Companion.END_MOVES_FLAG
 import java.util.*
 import kotlin.concurrent.thread
 
+const val MAX_MOVES_COUNT = 200
+
 object NativeEngine {
+
 
     private lateinit var mainThread: Thread
 
@@ -40,45 +43,88 @@ object NativeEngine {
             Thread.sleep(1)
     }
 
-    fun getMoves(position: Position, x: Int, y: Int): Array<Move> {
+    fun getMoves(position: Position, x: Int, y: Int): Pair<Array<Move>, Boolean> {
+        val moves = ShortArray(MAX_MOVES_COUNT)
+        getNativeMoves(position, x, y, moves)
+
+        val movesList = ArrayList<Move>()
+
+        var multiTake = false
+
+        label@
+        for (move in moves) {
+            if (move == END_MOVES_FLAG)
+                break
+            val nativeMove = NativeMove(move)
+            if (nativeMove.from.x != x || nativeMove.from.y != y)
+                continue
+            if (nativeMove.isTake) {
+                val secondaryPosition = position.clone()
+                makeMove(secondaryPosition, nativeMove)
+                val secondaryMoves = ShortArray(MAX_MOVES_COUNT)
+                getNativeMoves(secondaryPosition, nativeMove.to.x, nativeMove.to.y, secondaryMoves)
+                val nativeMove1 = NativeMove(secondaryMoves[0])
+                if (secondaryMoves[0] != END_MOVES_FLAG && nativeMove1.isTake && !nativeMove1.isOpposite(nativeMove)) {
+                    if (!multiTake)
+                        movesList.clear()
+                    multiTake = true
+                }
+
+                for (secondaryMove in secondaryMoves) {
+                    if (secondaryMove == END_MOVES_FLAG)
+                        break
+                    val nativeSecondaryMove = NativeMove(secondaryMove)
+                    val opposite = nativeSecondaryMove.isOpposite(nativeMove)
+                    if (multiTake && (!nativeSecondaryMove.isTake || opposite))
+                        continue@label
+                }
+            }
+
+            movesList.add(nativeMove)
+        }
+
+        return movesList.toTypedArray() to multiTake
+    }
+
+    private fun getNativeMoves(
+        position: Position,
+        x: Int,
+        y: Int,
+        movesArray: ShortArray
+    ) {
         val (whiteCheckers, blackCheckers, whiteQueens, blackQueens) =
                 position.toNative()
 
-
-        val moves = ShortArray(200)
-
+        val white = position.board[x][y].isWhite
         task {
             NativeMethods.getAvailableMoves(
                 whiteCheckers, blackCheckers, whiteQueens,
-                blackQueens, position.board[x][y].isWhite, moves
+                blackQueens, white, movesArray
+            )
+        }
+    }
+
+    fun getBestMove(position: Position, isTurnWhite: Boolean, depth: Int): Array<Move> {
+        val (whiteCheckers, blackCheckers, whiteQueens, blackQueens) =
+                position.toNative()
+        val bestMove = ShortArray(MAX_MOVES_COUNT)
+        task {
+            NativeMethods.getBestMove(
+                whiteCheckers, blackCheckers, whiteQueens,
+                blackQueens, isTurnWhite, depth.toShort(),
+                bestMove
             )
         }
 
         val movesList = ArrayList<Move>()
 
-        for (move in moves) {
+        for (move in bestMove) {
             if (move == END_MOVES_FLAG)
                 break
-            val nativeMove = NativeMove(move)
-            if (nativeMove.from.x == x && nativeMove.from.y == y)
-                movesList.add(nativeMove)
+            movesList.add(NativeMove(move))
         }
 
         return movesList.toTypedArray()
-    }
-
-    fun getBestMove(position: Position, isTurnWhite: Boolean, depth: Int): Move {
-        val (whiteCheckers, blackCheckers, whiteQueens, blackQueens) =
-                position.toNative()
-        var bestMove: Short = 0
-        task {
-            bestMove = NativeMethods.getBestMove(
-                whiteCheckers, blackCheckers, whiteQueens,
-                blackQueens, isTurnWhite, depth
-            )
-        }
-
-        return NativeMove(bestMove)
     }
 
     fun makeMove(position: Position, move: Move) {

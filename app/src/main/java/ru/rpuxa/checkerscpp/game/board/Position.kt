@@ -12,6 +12,16 @@ class Position {
             ) { NullFigure }
         }
 
+    fun clone(): Position {
+        val position = Position()
+        for (x in BOARD_RANGE)
+            for (y in BOARD_RANGE) {
+                position.board[x][y] = board[x][y]
+            }
+        return position
+    }
+
+
     fun setFromNative(figures: IntArray) {
         for (bit in 0 until 32) {
             for (type in 0 until 4) {

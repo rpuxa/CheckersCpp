@@ -18,10 +18,10 @@ class MainActivity : AppCompatActivity() {
 
         val bot = Bot()
         val human = Human(game_board)
-
+        val pos = Position.createStartPosition()
         Game(
-            Position.createStartPosition(),
-            true,
+            pos,
+            false,
             human,
             bot,
             game_board

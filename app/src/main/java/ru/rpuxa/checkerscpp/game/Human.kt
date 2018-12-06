@@ -14,15 +14,18 @@ class Human(private val humanController: HumanController) : Player {
     override fun onMove(executor: CommandExecutor, game: Game) {
         this.executor = executor
         humanController.canMove = true
+        humanController.lastMove = null
         humanController.isHumanColorWhite = game.isTurnWhite
         lock = true
         while (lock)
             Thread.sleep(50)
     }
 
-    fun makeMove(move: Move) {
-        humanController.canMove = false
-        executor.move(move)
-        lock = false
+    fun makeMove(move: Move, multiTake: Boolean) {
+        if (!multiTake)
+            humanController.canMove = false
+        executor.move(move, multiTake)
+        if (!multiTake)
+            lock = false
     }
 }

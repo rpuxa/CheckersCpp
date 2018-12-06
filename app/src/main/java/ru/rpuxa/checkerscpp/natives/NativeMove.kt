@@ -9,6 +9,7 @@ class NativeMove(move: Short) : Move {
 
     override val from: Cell
     override val to: Cell
+    val isTake: Boolean
 
     init {
         val intMove = move.toInt()
@@ -17,6 +18,18 @@ class NativeMove(move: Short) : Move {
 
         from = X[fromInt] x Y[fromInt]
         to = X[toInt] x Y[toInt]
+
+        isTake = intMove checkBit 0
+    }
+
+    fun isOpposite(other: Move): Boolean {
+        val x1 = to.x - from.x
+        val y1 = to.y - from.y
+
+        val x2 = other.to.x - other.from.x
+        val y2 = other.to.y - other.from.y
+
+        return x1 * x2 + y1 * y2 < 0
     }
 
     companion object {
